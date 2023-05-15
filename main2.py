@@ -1,7 +1,7 @@
 import whisper
 import os
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 
 # Example formatting to tell the model
 # how to punctuate the output and to
@@ -22,7 +22,7 @@ class Model:
     def open_audio_file(self):
         self.audio_filename = filedialog.askopenfilename()
 
-    def speech_to_text(self):
+    def speech_to_text(self): 
         model = whisper.load_model("medium")
         result = model.transcribe(audio=self.audio_filename, initial_prompt=INITIAL_PROMPT, fp16=False, language='en')
         self.text_file = result["text"]
@@ -43,25 +43,25 @@ class Model:
         self.text_filename =  os.path.splitext(self.audio_filename)[0] + new_extension
 
 
-class View:
-    def __init__(self, root):
-        self.frame = tk.Frame(root)
-        self.frame.pack()
+class View(ttk.Frame):
+    def __init__(self, parent):
+        super().__init__(parent)
 
-        self.title = tk.Label(self.frame, text="Speech to Text")
-        self.title.pack()
+        self.title = ttk.Label(self, text="Speech to Text")
 
-        self.button = tk.Button(self.frame, text="Select File")
-        self.button.pack()
+        self.button = ttk.Button(self, text="Select File")
+        self.button.grid(row=0, column=0, padx=10)
 
-        self.label = tk.Label(self.frame, text="")
-        self.label.pack()
+        self.label = ttk.Label(self, text="")
+        self.label.grid(row=1, column=0, padx=10)
 
-        self.button2 = tk.Button(self.frame, text="Generate Text")
-        self.button2.pack()
+        self.button2 = ttk.Button(self, text="Generate Text")
+        self.button2.grid(row=3, column=0, padx=10)
 
-        self.label2 = tk.Label(self.frame, text="")
-        self.label2.pack()
+        self.label2 = ttk.Label(self, text="")
+        self.label2.grid(row=4, column=0, padx=10)
+
+        self.controller = None
 
     def display_selected(self, filename):
         self.label.config(text=filename)
@@ -69,29 +69,50 @@ class View:
     def display_generating(self):
         self.label2.config(text="Generating text...")
 
+    def display_nofile(self):
+        self.label2.config(text="No File Selected")
+
+    def set_controller(self, controller):
+        self.controller = controller
+
 
 class Controller:
-    def __init__(self, root):
-        self.model = Model()
-        self.view = View(root)
+    def __init__(self, model, view):
+        self.model = model
+        self.view = view
 
         self.view.button.config(command=self.open)
 
         self.view.button2.config(command=self.generate)
 
     def open(self):
+        self.view.display_selected(self.model.audio_filename)
         self.model.open_audio_file()
-        self.view.display_selected()
-
+        
     def generate(self):
-        self.model.speech_to_text()
+        if self.model.audio_filename is None:
+            self.view.display_nofile()
+            return
         self.view.display_generating()
+        self.model.speech_to_text()
         
 
-def main():
-    root = tk.Tk()
-    app = Controller(root)
-    root.mainloop()
+class App(tk.Tk):
+    def __init__(self):
+        super().__init__()
 
-    if __name__ == "__main__":
-        main()
+        self.title("Text to Speech App")
+
+        model = Model()
+
+        view = View(self)
+        view.grid(row=0, column=0, padx=10, pady=10)
+
+        controller = Controller(model, view)
+
+        view.set_controller(controller)
+
+        
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()

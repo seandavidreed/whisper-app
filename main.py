@@ -4,9 +4,6 @@
 
 import whisper
 import os
-import sys
-import time
-import threading
 import tkinter as tk
 from tkinter import filedialog
 
@@ -19,23 +16,25 @@ INITIAL_PROMPT = (
     "Do you Agree?"
 )
 
-# Generates a dynamic "Loading..." output to the console
-# using it's own thread to as not to halt the program.
-class LoadingEllipsis(threading.Thread):
+class AudioFile():
     def __init__(self):
-        super().__init__()
-        self.running = True
+        self.filename = None
+        self.generated_text = None
+    
+    def open(self):
+        self.filename = filedialog.askopenfilename()
+    
+    def to_text(self):
+        '''
+        Simple wrapper method for the entre of the program:
+        the speech-to-text conversion.
+        '''
+        if self.filename == None:
+            return
 
-    def run(self):
-        sys.stdout.write("Generating Text")
-        while self.running:
-            sys.stdout.write('.')
-            sys.stdout.flush()
-            time.sleep(1)
-
-    def stop(self):
-        self.running = False
-        print()
+        model = whisper.load_model("medium")
+        result = model.transcribe(audio=self.filename, initial_prompt=INITIAL_PROMPT, fp16=False, language='en')
+        self.generated_text = result["text"]
 
 
 # Replaces the file extension of the audio file
@@ -49,41 +48,28 @@ def replace_extension(filename, new_extension):
     return os.path.splitext(filename)[0] + new_extension
 
 
-def speech_to_text(audio_file_path):
-    '''
-    Simple wrapper function for the entre of the program:
-    the speech-to-text conversion.
-    '''
-    model = whisper.load_model("medium")
-    result = model.transcribe(audio=audio_file_path, initial_prompt=INITIAL_PROMPT, fp16=False, language='en')
-    return result["text"]
-
-
 def main():
     root = tk.Tk()
-    filename = filedialog.askopenfilename(parent=root)
+    root.geometry("400x400")
+    root.title("Text To Speech")
+    label = tk.Label(root, text="Open File")
+    label.pack()
+
+    audio_file = AudioFile()
+    button = tk.Button(root, text="Select", command=audio_file.open)
+    button.pack()
+
+    button2 = tk.Button(root, text="Generate", command=audio_file.to_text)
+    button2.pack()
+    
     root.mainloop()
-
-    # Get audio file path
-    audio_file_path = filename
-
-    # Generate "Loading..." on separate thread
-    loading_ellipsis = LoadingEllipsis()
-    loading_ellipsis.start()
-
-    # Generate text from audio file with OpenAI's Whisper API.
-    text = speech_to_text(audio_file_path)
-
-    # Terminate "Loading..."
-    loading_ellipsis.stop()
-    loading_ellipsis.join()
     
     # Prepare name for new text file.
-    text_file = replace_extension(audio_file_path, '.docx')
+    text_filename = replace_extension(audio_file.filename, '.docx')
 
     # Write generated text to file.
-    with open(text_file, "w") as file:
-        for line in text:
+    with open(text_filename, "w") as file:
+        for line in audio_file.generated_text:
             file.write(line)
 
 if __name__ == "__main__":
