@@ -1,3 +1,6 @@
+# Thanks to the tutorial at https://www.pythontutorial.net/tkinter/tkinter-mvc/
+# for explaining the MVC design pattern using the tkinter library.
+
 import whisper
 import os
 import tkinter as tk
@@ -22,9 +25,20 @@ class Model:
     def open_audio_file(self):
         self.audio_filename = filedialog.askopenfilename()
 
-    def speech_to_text(self): 
+    def speech_to_text(self):
+        '''
+        The entre of the program. This function contains the
+        Whisper API functionality, to which the rest of the program
+        is a wrapper.
+        '''
         model = whisper.load_model("medium")
-        result = model.transcribe(audio=self.audio_filename, initial_prompt=INITIAL_PROMPT, fp16=False, language='en')
+        result = model.transcribe(
+            audio=self.audio_filename,
+            temperature=0.2,
+            initial_prompt=INITIAL_PROMPT, 
+            fp16=False, 
+            language='en'
+        )
         self.text_file = result["text"]
         self.replace_extension(new_extension=".docx")
 
@@ -32,13 +46,10 @@ class Model:
             for line in self.text_file:
                 file.write(line)
     
-    # Replaces the file extension of the audio file
-    # with that of the output text file.
     def replace_extension(self, new_extension):
         '''
-        os.path.splitext splits the filename into a tuple ('filename', '.extension')
-        We take the first part (the filename without the extension), 
-        and add the new extension to it.
+        Replaces the file extension of the audio file
+        with that of the output text file.
         '''
         self.text_filename =  os.path.splitext(self.audio_filename)[0] + new_extension
 
@@ -102,6 +113,7 @@ class App(tk.Tk):
         super().__init__()
 
         self.title("Text to Speech App")
+        self.geometry("600x600")
 
         model = Model()
 
@@ -112,7 +124,8 @@ class App(tk.Tk):
 
         view.set_controller(controller)
 
-        
+
 if __name__ == "__main__":
     app = App()
     app.mainloop()
+
