@@ -1,10 +1,16 @@
 # Thanks to the tutorial at https://www.pythontutorial.net/tkinter/tkinter-mvc/
 # for explaining the MVC design pattern using the tkinter library.
+#
+# Thanks to the tutorial at https://medium.com/@fareedkhandev/modern-gui-using-tkinter-12da0b983e22
+# for explaining the usage of the customtkinter library.
 
 import whisper
 import os
-import tkinter as tk
-from tkinter import filedialog, ttk
+import customtkinter as ctk
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("green")
+
+from customtkinter import filedialog
 
 # Example formatting to tell the model
 # how to punctuate the output and to
@@ -54,34 +60,33 @@ class Model:
         self.text_filename =  os.path.splitext(self.audio_filename)[0] + new_extension
 
 
-class View(ttk.Frame):
+class View(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.title = ctk.CTkLabel(self, text="Speech to Text")
 
-        self.title = ttk.Label(self, text="Speech to Text")
-
-        self.button = ttk.Button(self, text="Select File")
+        self.button = ctk.CTkButton(self, text="Select File")
         self.button.grid(row=0, column=0, padx=10)
 
-        self.label = ttk.Label(self, text="")
+        self.label = ctk.CTkLabel(self, text="")
         self.label.grid(row=1, column=0, padx=10)
 
-        self.button2 = ttk.Button(self, text="Generate Text")
+        self.button2 = ctk.CTkButton(self, text="Generate Text")
         self.button2.grid(row=3, column=0, padx=10)
 
-        self.label2 = ttk.Label(self, text="")
+        self.label2 = ctk.CTkLabel(self, text="")
         self.label2.grid(row=4, column=0, padx=10)
 
         self.controller = None
 
     def display_selected(self, filename):
-        self.label.config(text=filename)
+        self.label.configure(text=filename)
 
     def display_generating(self):
-        self.label2.config(text="Generating text...")
+        self.label2.configure(text="Generating text...")
 
     def display_nofile(self):
-        self.label2.config(text="No File Selected")
+        self.label2.configure(text="No File Selected")
 
     def set_controller(self, controller):
         self.controller = controller
@@ -92,9 +97,9 @@ class Controller:
         self.model = model
         self.view = view
 
-        self.view.button.config(command=self.open)
+        self.view.button.configure(command=self.open)
 
-        self.view.button2.config(command=self.generate)
+        self.view.button2.configure(command=self.generate)
 
     def open(self):
         self.view.display_selected(self.model.audio_filename)
@@ -108,17 +113,19 @@ class Controller:
         self.model.speech_to_text()
         
 
-class App(tk.Tk):
+class App(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         self.title("Text to Speech App")
         self.geometry("600x600")
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         model = Model()
 
         view = View(self)
-        view.grid(row=0, column=0, padx=10, pady=10)
+        view.grid(row=0, column=0, padx=50, pady=50, sticky="nwes")
 
         controller = Controller(model, view)
 
